@@ -82,19 +82,105 @@ You should see content served by the backend app server `172.16.20.22`.
 
 ---
 
-### 🔁 Optional: If the backend runs on a different port (e.g., 8080)
 
-Change the proxy lines like this:
+=========================================================================================
+Here is an **Ansible playbook** that will set up an **Apache reverse proxy** on an **Ubuntu 22.04 server** to forward all HTTP requests to a backend server at IP `172.16.20.22`.
 
-```apache
-ProxyPass "/" "http://172.16.20.22:8080/"
-ProxyPassReverse "/" "http://172.16.20.22:8080/"
+---
+
+### ✅ `reverse-proxy.yml` – Ansible Playbook
+
+```yaml
+---
+- name: Configure Apache Reverse Proxy on Ubuntu
+  hosts: proxy
+  become: yes
+  vars:
+    backend_ip: "172.16.20.22"
+    site_conf_path: "/etc/apache2/sites-available/reverse-proxy.conf"
+
+  tasks:
+    - name: Install Apache2
+      apt:
+        name: apache2
+        state: present
+        update_cache: yes
+
+    - name: Enable required Apache modules
+      shell: |
+        a2enmod proxy
+        a2enmod proxy_http
+        a2enmod headers
+      args:
+        warn: false
+
+    - name: Create reverse proxy configuration file
+      copy:
+        dest: "{{ site_conf_path }}"
+        content: |
+          ProxyRequests On
+          ProxyVia On
+          Timeout 2400
+          ProxyTimeout 2400
+          ProxyBadHeader Ignore
+
+          <Proxy "*">
+              Require all granted
+          </Proxy>
+
+          <VirtualHost *:80>
+              ProxyPreserveHost On
+              ProxyPass "/" "http://{{ backend_ip }}/"
+              ProxyPassReverse "/" "http://{{ backend_ip }}/"
+              ProxyTimeout 1200
+
+              ErrorLog ${APACHE_LOG_DIR}/proxy-error.log
+              CustomLog ${APACHE_LOG_DIR}/proxy-access.log combined
+          </VirtualHost>
+
+    - name: Enable the reverse proxy site
+      shell: a2ensite reverse-proxy.conf
+      args:
+        warn: false
+
+    - name: Reload Apache to apply configuration
+      systemd:
+        name: apache2
+        state: restarted
+        enabled: yes
+
+    - name: Allow HTTP through UFW (if active)
+      ufw:
+        rule: allow
+        name: 'Apache Full'
+        state: enabled
+      when: ansible_facts.os_family == 'Debian'
+```
+
+---
+
+### ✅ Inventory File Example (`inventory.ini`)
+
+```ini
+[proxy]
+proxy-server-01 ansible_host=192.168.1.10 ansible_user=ubuntu
+```
+
+---
+
+### ✅ How to Run
+
+```bash
+ansible-playbook -i inventory.ini reverse-proxy.yml
 ```
 
 ---
 
 Let me know if:
 
-* The backend uses HTTPS.
-* You want to forward specific paths.
-* Or add load balancing later.
+* You want to configure HTTPS or use Let's Encrypt.
+* You’re using a different backend port.
+* You want to make this a load balancer.
+
+
+
