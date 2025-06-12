@@ -176,11 +176,7 @@ ansible-playbook -i inventory.ini reverse-proxy.yml
 
 ---
 
-Let me know if:
 
-* You want to configure HTTPS or use Let's Encrypt.
-* You’re using a different backend port.
-* You want to make this a load balancer.
 
 
 
