@@ -19,4 +19,12 @@ sudo apt install openjdk-17-jdk -y
 --------------------------------------------------------------------------------
 
 sudo systemctl restart jenkins
-sudo systemctl status jenkins
+sudo systemctl status Jenkins
+--------------------------------------------------------------------------------
+
+
+root@STAG-App1:~# cat /var/lib/jenkins/secrets/initialAdminPassword
+
+caf111bdb18e4e908d767c340fabb654
+root@STAG-App1:~#
+--------------------------------------------------------------------------------
