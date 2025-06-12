@@ -1,0 +1,100 @@
+
+
+### ✅ Final Apache Reverse Proxy Setup on Ubuntu (Single App Server: `172.16.20.22`)
+
+#### 1. **Install Apache2**
+
+```bash
+sudo apt update
+sudo apt install apache2 -y
+```
+
+#### 2. **Enable Required Modules**
+
+```bash
+sudo a2enmod proxy
+sudo a2enmod proxy_http
+sudo a2enmod headers
+```
+
+#### 3. **Create Proxy Configuration**
+
+Create a file named `/etc/apache2/sites-available/reverse-proxy.conf`:
+
+```bash
+sudo nano /etc/apache2/sites-available/reverse-proxy.conf
+```
+
+Paste this config:
+
+```apache
+ProxyRequests On
+ProxyVia On
+Timeout 2400
+ProxyTimeout 2400
+ProxyBadHeader Ignore
+
+<Proxy "*">
+    Require all granted
+</Proxy>
+
+<VirtualHost *:80>
+    ServerName proxy.local
+
+    ProxyPreserveHost On
+    ProxyPass "/" "http://172.16.20.22/"
+    ProxyPassReverse "/" "http://172.16.20.22/"
+    ProxyTimeout 1200
+
+    ErrorLog ${APACHE_LOG_DIR}/proxy-error.log
+    CustomLog ${APACHE_LOG_DIR}/proxy-access.log combined
+</VirtualHost>
+```
+
+> Replace `proxy.local` with your domain name or leave it as-is if using IP-based access.
+
+#### 4. **Enable Site and Reload Apache**
+
+```bash
+sudo a2ensite reverse-proxy.conf
+sudo systemctl reload apache2
+```
+
+#### 5. **Allow HTTP Port (Optional UFW command)**
+
+If UFW is active:
+
+```bash
+sudo ufw allow 'Apache Full'
+```
+
+---
+
+### ✅ Test
+
+From a browser or curl:
+
+```bash
+curl http://<proxy-server-ip>/
+```
+
+You should see content served by the backend app server `172.16.20.22`.
+
+---
+
+### 🔁 Optional: If the backend runs on a different port (e.g., 8080)
+
+Change the proxy lines like this:
+
+```apache
+ProxyPass "/" "http://172.16.20.22:8080/"
+ProxyPassReverse "/" "http://172.16.20.22:8080/"
+```
+
+---
+
+Let me know if:
+
+* The backend uses HTTPS.
+* You want to forward specific paths.
+* Or add load balancing later.
